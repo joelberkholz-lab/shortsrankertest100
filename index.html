@@ -39,7 +39,12 @@
   input[type="text"] { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
   input[type="text"]:focus { border-color: var(--accent2); }
   .ranking-preview { display: flex; flex-direction: column; gap: 6px; }
-  .rank-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg); border-radius: 6px; border: 1px solid var(--border); }
+  .rank-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg); border-radius: 6px; border: 1px solid var(--border); cursor: grab; user-select: none; transition: background 0.15s, border-color 0.15s; }
+  .rank-row:active { cursor: grabbing; }
+  .rank-row.dragging { opacity: 0.4; border-color: var(--accent2); }
+  .rank-row.drag-over-top { border-top: 2px solid var(--accent2); }
+  .rank-row.drag-over-bottom { border-bottom: 2px solid var(--accent2); }
+  .drag-handle { color: var(--muted); font-size: 14px; flex-shrink: 0; }
   .rank-num { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--accent2); width: 24px; flex-shrink: 0; }
   .rank-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; font-family: 'Space Grotesk', sans-serif; cursor: pointer; border: none; transition: all 0.2s; width: 100%; }
@@ -52,7 +57,7 @@
   .progress-section { display: none; }
   .progress-section.active { display: block; }
   .progress-bar-track { background: var(--border); border-radius: 999px; height: 6px; overflow: hidden; margin-top: 10px; }
-  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 999px; transition: width 0.3s ease; width: 0%; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 999px; transition: width 0.15s ease; width: 0%; }
   .progress-label { font-size: 12px; color: var(--muted); margin-top: 6px; font-family: 'Space Mono', monospace; }
   .log-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); max-height: 100px; overflow-y: auto; margin-top: 10px; }
   .log-line { margin-bottom: 3px; }
@@ -65,6 +70,9 @@
   .overlay-item { font-size: 9px; color: rgba(255,255,255,0.85); padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Space Mono', monospace; }
   .overlay-video-area { flex: 1; background: #1a1a1a; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: rgba(124,58,237,0.15); color: var(--accent2); border: 1px solid rgba(124,58,237,0.3); margin-left: 8px; }
+  .speed-row { display: flex; gap: 8px; margin-top: 12px; }
+  .speed-btn { flex: 1; padding: 7px; border-radius: 6px; font-size: 12px; font-weight: 600; font-family: 'Space Grotesk', sans-serif; cursor: pointer; border: 1px solid var(--border); background: var(--bg); color: var(--muted); transition: all 0.15s; }
+  .speed-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   canvas { display: none; }
 </style>
 </head>
@@ -103,12 +111,21 @@
       <input type="text" id="rankTitle" placeholder="e.g. Top Shorts" value="Top Shorts">
     </div>
     <div class="card">
-      <div class="card-title">3. Random Ranking</div>
+      <div class="card-title">3. Ranking <span style="color:var(--muted);font-size:11px;font-weight:400;text-transform:none;letter-spacing:0">— drag to reorder</span></div>
       <div id="rankingPreview" class="ranking-preview">
-        <div class="empty-state">Upload videos first, then shuffle.</div>
+        <div class="empty-state">Upload videos first, then rank.</div>
       </div>
       <br>
       <button class="btn btn-secondary" onclick="shuffleRanking()">🔀 Shuffle Ranking</button>
+    </div>
+    <div class="card">
+      <div class="card-title">4. Processing Speed</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px">All modes include audio. Faster = shorter wait time.</p>
+      <div class="speed-row">
+        <button class="speed-btn" id="spd-1x" onclick="setSpeed(1)">1x<br><span style="font-size:10px;font-weight:400">Normal</span></button>
+        <button class="speed-btn active" id="spd-2x" onclick="setSpeed(2)">2x<br><span style="font-size:10px;font-weight:400">Faster</span></button>
+        <button class="speed-btn" id="spd-4x" onclick="setSpeed(4)">4x<br><span style="font-size:10px;font-weight:400">Fastest</span></button>
+      </div>
     </div>
     <div class="card">
       <div class="card-title">Overlay Preview</div>
@@ -123,12 +140,21 @@
     <button class="btn btn-primary" id="generateBtn" onclick="generateVideo()" disabled>⚡ Combine &amp; Download</button>
   </div>
 </main>
-
 <canvas id="canvas"></canvas>
-
 <script>
 let videos = [];
 let ranked = [];
+let speed = 2; // playback rate multiplier
+const FPS = 30;
+const FRAME_MS = 1000 / FPS;
+
+function setSpeed(s) {
+  speed = s;
+  [1,2,4].forEach(v => {
+    const el = document.getElementById('spd-'+v+'x');
+    if (el) el.classList.toggle('active', v === s);
+  });
+}
 
 // ─── File handling ────────────────────────────────────────────────────────────
 const dropZone = document.getElementById('dropZone');
@@ -139,8 +165,7 @@ dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.
 fileInput.addEventListener('change', () => handleFiles([...fileInput.files]));
 
 function handleFiles(files) {
-  const vids = files.filter(f => f.type.startsWith('video/'));
-  vids.forEach(file => {
+  files.filter(f => f.type.startsWith('video/')).forEach(file => {
     const url = URL.createObjectURL(file);
     const v = document.createElement('video');
     v.src = url; v.preload = 'metadata';
@@ -175,19 +200,55 @@ function renderVideoList() {
 
 function fmt(s) { if (!s||isNaN(s)) return '--'; return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
 
-// ─── Ranking ──────────────────────────────────────────────────────────────────
 function shuffleRanking() {
-  if (!videos.length) { document.getElementById('rankingPreview').innerHTML = '<div class="empty-state">Upload videos first, then shuffle.</div>'; updateOverlayPreview(); return; }
+  if (!videos.length) { document.getElementById('rankingPreview').innerHTML = '<div class="empty-state">Upload videos first, then rank.</div>'; updateOverlayPreview(); return; }
   ranked = videos.map((_,i)=>i);
   for (let i = ranked.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [ranked[i],ranked[j]]=[ranked[j],ranked[i]]; }
+  renderRankingList();
+}
+
+let dragSrcIdx = null;
+
+function renderRankingList() {
   const p = document.getElementById('rankingPreview');
   p.innerHTML = '';
-  ranked.forEach((vi,ri) => {
-    const r = document.createElement('div'); r.className = 'rank-row';
-    r.innerHTML = `<span class="rank-num">#${ri+1}</span><span class="rank-name">${videos[vi].name}</span>`;
+  ranked.forEach((vi, ri) => {
+    const r = document.createElement('div');
+    r.className = 'rank-row';
+    r.draggable = true;
+    r.dataset.ri = ri;
+    r.innerHTML = `<span class="drag-handle">⠿</span><span class="rank-num">#${ri+1}</span><span class="rank-name">${videos[vi].name}</span>`;
+
+    r.addEventListener('dragstart', () => { dragSrcIdx = ri; setTimeout(() => r.classList.add('dragging'), 0); });
+    r.addEventListener('dragend', () => { r.classList.remove('dragging'); document.querySelectorAll('.rank-row').forEach(el => el.classList.remove('drag-over-top','drag-over-bottom')); });
+    r.addEventListener('dragover', e => {
+      e.preventDefault();
+      document.querySelectorAll('.rank-row').forEach(el => el.classList.remove('drag-over-top','drag-over-bottom'));
+      const rect = r.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      r.classList.add(e.clientY < mid ? 'drag-over-top' : 'drag-over-bottom');
+    });
+    r.addEventListener('drop', e => {
+      e.preventDefault();
+      if (dragSrcIdx === null || dragSrcIdx === ri) return;
+      const rect = r.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      const insertAfter = e.clientY >= mid;
+      const moved = ranked.splice(dragSrcIdx, 1)[0];
+      let target = ri;
+      if (dragSrcIdx < ri) target = insertAfter ? ri : ri - 1;
+      else target = insertAfter ? ri + 1 : ri;
+      ranked.splice(Math.max(0, target), 0, moved);
+      dragSrcIdx = null;
+      renderRankingList();
+      renderVideoList();
+      updateOverlayPreview();
+    });
+
     p.appendChild(r);
   });
-  renderVideoList(); updateOverlayPreview();
+  renderVideoList();
+  updateOverlayPreview();
 }
 
 document.getElementById('rankTitle').addEventListener('input', updateOverlayPreview);
@@ -202,7 +263,105 @@ function updateOverlayPreview() {
 
 function updateGenerateBtn() { document.getElementById('generateBtn').disabled = videos.length < 2; }
 
-// ─── Canvas + MediaRecorder render ───────────────────────────────────────────
+// ─── Draw overlay onto canvas context ────────────────────────────────────────
+function drawOverlay(ctx, W, H, title, clipIndex) {
+  ctx.fillStyle = 'rgba(0,0,0,0.72)';
+  ctx.fillRect(0, 0, 190, H);
+  ctx.fillStyle = '#a855f7';
+  ctx.font = 'bold 18px monospace';
+  ctx.fillText(title.toUpperCase(), 10, 32);
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.fillRect(10, 42, 170, 1);
+  ranked.forEach((vi, ri) => {
+    const isActive = ri === clipIndex;
+    ctx.fillStyle = isActive ? '#a855f7' : 'rgba(255,255,255,0.75)';
+    ctx.font = isActive ? 'bold 15px monospace' : '14px monospace';
+    ctx.fillText(`${ri+1}. ${videos[vi].name.substring(0,15)}`, 10, 62 + ri * 24);
+  });
+}
+
+function drawVideoFrame(ctx, vid, W, H) {
+  const vr = vid.videoWidth / vid.videoHeight;
+  const cr = W / H;
+  let sw, sh, sx, sy;
+  if (vr > cr) { sh = H; sw = H * vr; sx = -(sw-W)/2; sy = 0; }
+  else { sw = W; sh = W / vr; sx = 0; sy = -(sh-H)/2; }
+  ctx.drawImage(vid, sx, sy, sw, sh);
+}
+
+// ─── FAST mode: seek frame by frame ──────────────────────────────────────────
+function seekRenderClip(ctx, videoObj, W, H, title, clipIndex, recorder) {
+  return new Promise((resolve, reject) => {
+    const vid = document.createElement('video');
+    vid.src = videoObj.url;
+    vid.preload = 'auto';
+    vid.muted = true;
+
+    vid.onloadedmetadata = async () => {
+      const duration = vid.duration;
+      const totalFrames = Math.floor(duration * FPS);
+      addLog(`  ${videoObj.name}: ${totalFrames} frames`);
+
+      for (let f = 0; f < totalFrames; f++) {
+        const t = f / FPS;
+        await seekTo(vid, t);
+        drawVideoFrame(ctx, vid, W, H);
+        drawOverlay(ctx, W, H, title, clipIndex);
+        // Give recorder a tick to capture the frame
+        await new Promise(r => setTimeout(r, 0));
+      }
+      resolve();
+    };
+    vid.onerror = reject;
+    vid.load();
+  });
+}
+
+function seekTo(vid, time) {
+  return new Promise(res => {
+    vid.currentTime = time;
+    vid.onseeked = () => res();
+  });
+}
+
+// ─── Real-time playback capturing both canvas video + original audio ─────────
+function realtimeRenderClip(ctx, videoObj, W, H, title, clipIndex, audioCtx, audioDest) {
+  return new Promise((resolve, reject) => {
+    const vid = document.createElement('video');
+    vid.src = videoObj.url;
+    vid.preload = 'auto';
+    vid.muted = false;
+    vid.crossOrigin = 'anonymous';
+
+    vid.oncanplaythrough = () => {
+      // Wire audio: video -> gain node -> combined destination
+      try {
+        const source = audioCtx.createMediaElementSource(vid);
+        const gain = audioCtx.createGain();
+        gain.gain.value = 1;
+        source.connect(gain);
+        gain.connect(audioDest);
+      } catch(e) {
+        // audio wiring failed silently, video still renders
+      }
+
+      vid.play();
+
+      function frame() {
+        if (vid.ended) { resolve(); return; }
+        drawVideoFrame(ctx, vid, W, H);
+        drawOverlay(ctx, W, H, title, clipIndex);
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+      vid.addEventListener('ended', resolve, { once: true });
+    };
+    vid.onerror = reject;
+    vid.load();
+  });
+}
+
+// ─── Main generate ────────────────────────────────────────────────────────────
 async function generateVideo() {
   const btn = document.getElementById('generateBtn');
   btn.disabled = true; btn.textContent = '⏳ Processing...';
@@ -215,31 +374,40 @@ async function generateVideo() {
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // Check MediaRecorder support
+  // Set up Web Audio context to capture original audio
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const audioDest = audioCtx.createMediaStreamDestination();
+
+  // Combine canvas video stream + audio stream
+  const videoStream = canvas.captureStream(FPS);
+  const audioStream = audioDest.stream;
+  const combinedStream = new MediaStream([
+    ...videoStream.getVideoTracks(),
+    ...audioStream.getAudioTracks()
+  ]);
+
   const mimeType = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
-  addLog(`Using codec: ${mimeType}`, 'ok');
+  addLog('Recording with original audio...', 'ok');
 
   const chunks = [];
-  const stream = canvas.captureStream(30);
-  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4_000_000 });
+  const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 5_000_000 });
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
   const done = new Promise(res => recorder.onstop = res);
-  recorder.start(100);
-
-  addLog(`Rendering ${ranked.length} videos...`);
+  recorder.start(50);
 
   for (let i = 0; i < ranked.length; i++) {
     const v = videos[ranked[i]];
-    addLog(`  Rendering: ${v.name}`);
-    setProgress(5 + (i / ranked.length) * 88);
-    await renderVideoToCanvas(ctx, v, W, H, title, i, ranked.length);
+    addLog(`Rendering clip ${i+1}/${ranked.length}: ${v.name}`);
+    setProgress(5 + (i / ranked.length) * 90);
+    await realtimeRenderClip(ctx, v, W, H, title, i, audioCtx, audioDest);
   }
 
-  addLog('Finalizing...');
+  addLog('Finalizing video...');
   recorder.stop();
   await done;
-  setProgress(98);
+  audioCtx.close();
+  setProgress(99);
 
   const blob = new Blob(chunks, { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -249,66 +417,10 @@ async function generateVideo() {
   a.click();
 
   setProgress(100);
-  addLog('Done! Downloading now.', 'ok');
+  addLog('Done! Downloading.', 'ok');
   btn.textContent = '✅ Download Started!';
   btn.className = 'btn btn-success';
   setTimeout(() => { btn.textContent = '⚡ Combine & Download'; btn.className = 'btn btn-primary'; btn.disabled = false; }, 3000);
-}
-
-function renderVideoToCanvas(ctx, videoObj, W, H, title, clipIndex, totalClips) {
-  return new Promise((resolve, reject) => {
-    const vid = document.createElement('video');
-    vid.src = videoObj.url;
-    vid.muted = false;
-    vid.preload = 'auto';
-
-    vid.oncanplaythrough = () => {
-      vid.play();
-      let lastTime = null;
-
-      function drawFrame(ts) {
-        if (vid.ended || vid.paused) { vid.pause(); resolve(); return; }
-
-        // Draw video frame scaled to fill canvas
-        const vr = vid.videoWidth / vid.videoHeight;
-        const cr = W / H;
-        let sw, sh, sx, sy;
-        if (vr > cr) { sh = H; sw = H * vr; sx = -(sw-W)/2; sy = 0; }
-        else { sw = W; sh = W / vr; sx = 0; sy = -(sh-H)/2; }
-        ctx.drawImage(vid, sx, sy, sw, sh);
-
-        // Overlay sidebar
-        ctx.fillStyle = 'rgba(0,0,0,0.72)';
-        ctx.fillRect(0, 0, 190, H);
-
-        // Title
-        ctx.fillStyle = '#a855f7';
-        ctx.font = 'bold 18px monospace';
-        ctx.fillText(title.toUpperCase(), 10, 32);
-
-        // Divider
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.fillRect(10, 42, 170, 1);
-
-        // Ranked list
-        ranked.forEach((vi, ri) => {
-          const isActive = ri === clipIndex;
-          ctx.fillStyle = isActive ? '#a855f7' : 'rgba(255,255,255,0.75)';
-          ctx.font = isActive ? 'bold 15px monospace' : '14px monospace';
-          const label = `${ri+1}. ${videos[vi].name.substring(0,16)}`;
-          ctx.fillText(label, 10, 62 + ri * 24);
-        });
-
-        requestAnimationFrame(drawFrame);
-      }
-
-      requestAnimationFrame(drawFrame);
-      vid.addEventListener('ended', () => { resolve(); }, { once: true });
-    };
-
-    vid.onerror = reject;
-    vid.load();
-  });
 }
 
 function setProgress(pct) {
