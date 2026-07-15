@@ -98,10 +98,13 @@
       <div class="video-list" id="videoList"></div>
     </div>
     <div class="card progress-section" id="progressSection">
-      <div class="card-title">Processing</div>
-      <div id="progressLabel" class="progress-label">Starting...</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="card-title" style="margin-bottom:0">Processing</div>
+        <div id="etaLabel" style="font-family:monospace;font-size:12px;color:var(--accent2)"></div>
+      </div>
+      <div id="clipLabel" style="font-size:13px;color:var(--text);margin-bottom:8px">Starting...</div>
       <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
-      <div class="log-box" id="logBox"></div>
+      <div id="progressLabel" class="progress-label">0% complete</div>
     </div>
   </div>
   <div class="right-panel">
@@ -265,19 +268,66 @@ function updateGenerateBtn() { document.getElementById('generateBtn').disabled =
 
 // ─── Draw overlay onto canvas context ────────────────────────────────────────
 function drawOverlay(ctx, W, H, title, clipIndex) {
-  ctx.fillStyle = 'rgba(0,0,0,0.72)';
-  ctx.fillRect(0, 0, 190, H);
-  ctx.fillStyle = '#a855f7';
-  ctx.font = 'bold 18px monospace';
-  ctx.fillText(title.toUpperCase(), 10, 32);
-  ctx.fillStyle = 'rgba(255,255,255,0.2)';
-  ctx.fillRect(10, 42, 170, 1);
+  const padX = 28;
+  const lineH = 54;
+  const startY = 60;
+
+  // Title
+  ctx.font = 'bold 44px Arial Black, Arial';
+  ctx.textBaseline = 'top';
+  const titleLines = wrapText(ctx, title, W - padX * 2);
+  let titleY = startY;
+  titleLines.forEach(line => {
+    const tw = ctx.measureText(line).width;
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(padX - 6, titleY - 4, tw + 12, 50);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(line, padX, titleY);
+    titleY += 52;
+  });
+
+  // Ranked items
+  const itemStartY = titleY + 18;
   ranked.forEach((vi, ri) => {
     const isActive = ri === clipIndex;
-    ctx.fillStyle = isActive ? '#a855f7' : 'rgba(255,255,255,0.75)';
-    ctx.font = isActive ? 'bold 15px monospace' : '14px monospace';
-    ctx.fillText(`${ri+1}. ${videos[vi].name.substring(0,15)}`, 10, 62 + ri * 24);
+    const y = itemStartY + ri * lineH;
+    const name = videos[vi].name.substring(0, 22);
+    const label = `${ri + 1}.  ${name}`;
+
+    ctx.font = isActive ? 'bold 36px Arial Black, Arial' : 'bold 30px Arial, sans-serif';
+    const tw = ctx.measureText(label).width;
+
+    // Shadow box behind text
+    ctx.fillStyle = 'rgba(0,0,0,0.42)';
+    ctx.fillRect(padX - 6, y - 2, tw + 16, isActive ? 44 : 38);
+
+    // Number in accent color, name in white
+    const numStr = `${ri + 1}.  `;
+    const numW = ctx.measureText(numStr).width;
+
+    ctx.fillStyle = isActive ? '#f0c93a' : '#a855f7';
+    ctx.fillText(numStr, padX, y);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(name, padX + numW, y);
   });
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let current = '';
+  for (const word of words) {
+    const test = current ? current + ' ' + word : word;
+    if (ctx.measureText(test).width > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = test;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
 }
 
 function drawVideoFrame(ctx, vid, W, H) {
@@ -387,7 +437,9 @@ async function generateVideo() {
   ]);
 
   const mimeType = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
-  addLog('Recording with original audio...', 'ok');
+  // Calculate total duration for ETA
+  const totalSecs = ranked.reduce((sum, vi) => sum + (videos[vi].duration || 0), 0);
+  startProgress(totalSecs);
 
   const chunks = [];
   const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 5_000_000 });
@@ -398,16 +450,17 @@ async function generateVideo() {
 
   for (let i = 0; i < ranked.length; i++) {
     const v = videos[ranked[i]];
-    addLog(`Rendering clip ${i+1}/${ranked.length}: ${v.name}`);
-    setProgress(5 + (i / ranked.length) * 90);
+    setClipLabel(`Clip ${i+1} of ${ranked.length}: ${v.name}`);
     await realtimeRenderClip(ctx, v, W, H, title, i, audioCtx, audioDest);
+    tickProgress(v.duration || 0);
   }
 
-  addLog('Finalizing video...');
+  setClipLabel('Finalizing...');
+  document.getElementById('etaLabel').textContent = '';
   recorder.stop();
   await done;
   audioCtx.close();
-  setProgress(99);
+  setProgress(100);
 
   const blob = new Blob(chunks, { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -416,25 +469,48 @@ async function generateVideo() {
   a.download = `${title.replace(/\s+/g,'_')}_ranked.webm`;
   a.click();
 
-  setProgress(100);
-  addLog('Done! Downloading.', 'ok');
+  setClipLabel('Done! Downloading...');
   btn.textContent = '✅ Download Started!';
   btn.className = 'btn btn-success';
   setTimeout(() => { btn.textContent = '⚡ Combine & Download'; btn.className = 'btn btn-primary'; btn.disabled = false; }, 3000);
 }
 
-function setProgress(pct) {
+let _startTime = null;
+let _totalDuration = 0;
+let _processedDuration = 0;
+
+function startProgress(totalSecs) {
+  _startTime = Date.now();
+  _totalDuration = totalSecs;
+  _processedDuration = 0;
+  setProgress(0);
+}
+
+function tickProgress(clipSecs) {
+  _processedDuration += clipSecs;
+  const pct = Math.min((_processedDuration / _totalDuration) * 100, 99);
+  const elapsed = (Date.now() - _startTime) / 1000;
+  const rate = _processedDuration / elapsed;
+  const remaining = (_totalDuration - _processedDuration) / rate;
+  setProgress(pct, remaining);
+}
+
+function setProgress(pct, remainingSecs) {
   document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('progressLabel').textContent = Math.round(pct) + '% complete';
+  if (remainingSecs !== undefined && remainingSecs > 0) {
+    const m = Math.floor(remainingSecs / 60);
+    const s = Math.floor(remainingSecs % 60);
+    document.getElementById('etaLabel').textContent = m > 0 ? `~${m}m ${s}s left` : `~${s}s left`;
+  }
+}
+
+function setClipLabel(msg) {
+  document.getElementById('clipLabel').textContent = msg;
 }
 
 function addLog(msg, type='') {
-  const box = document.getElementById('logBox');
-  const line = document.createElement('div');
-  line.className = 'log-line ' + type;
-  line.textContent = msg;
-  box.appendChild(line);
-  box.scrollTop = box.scrollHeight;
+  // silent — no log box anymore
 }
 </script>
 </body>
