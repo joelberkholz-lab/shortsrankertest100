@@ -6,532 +6,147 @@
 <title>Shorts Ranker</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg: #0a0a0f;
-    --surface: #13131a;
-    --border: #1e1e2e;
-    --accent: #7c3aed;
-    --accent2: #a855f7;
-    --text: #e2e8f0;
-    --muted: #64748b;
-    --green: #22c55e;
-    --red: #ef4444;
+    --bg: #0a0a0f; --surface: #13131a; --border: #1e1e2e;
+    --accent: #7c3aed; --accent2: #a855f7; --text: #e2e8f0;
+    --muted: #64748b; --green: #22c55e; --red: #ef4444;
   }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Space Grotesk', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  header {
-    padding: 24px 32px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .logo {
-    font-family: 'Space Mono', monospace;
-    font-size: 20px;
-    font-weight: 700;
-    background: linear-gradient(135deg, #7c3aed, #a855f7, #ec4899);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .tagline {
-    color: var(--muted);
-    font-size: 13px;
-    margin-left: auto;
-  }
-
-  main {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 360px;
-    gap: 0;
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
-    padding: 32px;
-    gap: 32px;
-  }
-
-  .left-panel { display: flex; flex-direction: column; gap: 24px; }
-  .right-panel { display: flex; flex-direction: column; gap: 24px; }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-  }
-
-  .card-title {
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    margin-bottom: 16px;
-  }
-
-  .drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: 10px;
-    padding: 40px 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-  }
-
-  .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--accent2);
-    background: rgba(124, 58, 237, 0.05);
-  }
-
-  .drop-icon { font-size: 36px; margin-bottom: 12px; }
-
-  .drop-label {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 6px;
-  }
-
+  body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 20px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; }
+  .logo { font-family: 'Space Mono', monospace; font-size: 20px; font-weight: 700; background: linear-gradient(135deg, #7c3aed, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .tagline { color: var(--muted); font-size: 13px; margin-left: auto; }
+  main { flex: 1; display: grid; grid-template-columns: 1fr 340px; gap: 28px; max-width: 1100px; margin: 0 auto; width: 100%; padding: 28px; }
+  .left-panel, .right-panel { display: flex; flex-direction: column; gap: 20px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 14px; }
+  .drop-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 36px 20px; text-align: center; transition: border-color 0.2s, background 0.2s; }
+  .drop-zone.drag-over { border-color: var(--accent2); background: rgba(124,58,237,0.05); }
+  .drop-icon { font-size: 32px; margin-bottom: 10px; }
+  .drop-label { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
   .drop-sub { font-size: 13px; color: var(--muted); }
-
-  .btn-browse {
-    display: inline-block;
-    margin-top: 14px;
-    padding: 8px 20px;
-    background: var(--accent);
-    color: #fff;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    font-family: 'Space Grotesk', sans-serif;
-    cursor: pointer;
-    border: none;
-    transition: background 0.2s;
-  }
-
-  .btn-browse:hover { background: var(--accent2); }
-
-  #fileInput { display: none; }
-
-  .video-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
-
-  .video-item {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    position: relative;
-  }
-
-  .video-thumb {
-    width: 48px;
-    height: 48px;
-    border-radius: 6px;
-    object-fit: cover;
-    background: var(--border);
-    flex-shrink: 0;
-  }
-
-  .video-thumb-placeholder {
-    width: 48px;
-    height: 48px;
-    border-radius: 6px;
-    background: var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    flex-shrink: 0;
-  }
-
+  .btn-browse { display: inline-block; margin-top: 12px; padding: 8px 20px; background: var(--accent); color: #fff; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .video-list { display: flex; flex-direction: column; gap: 8px; }
+  .video-item { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
+  .video-rank { font-family: 'Space Mono', monospace; font-size: 20px; font-weight: 700; color: var(--accent2); width: 32px; text-align: center; flex-shrink: 0; }
+  .video-thumb { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: var(--border); flex-shrink: 0; }
   .video-info { flex: 1; min-width: 0; }
-
-  .video-name {
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
+  .video-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .video-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
-  .video-rank {
-    font-family: 'Space Mono', monospace;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--accent2);
-    width: 36px;
-    text-align: center;
-    flex-shrink: 0;
-  }
-
-  .remove-btn {
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 16px;
-    padding: 4px;
-    border-radius: 4px;
-    transition: color 0.15s;
-    line-height: 1;
-  }
-
+  .remove-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; transition: color 0.15s; }
   .remove-btn:hover { color: var(--red); }
-
-  label.field-label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
-
-  input[type="text"] {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
+  label.field-label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+  input[type="text"] { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
   input[type="text"]:focus { border-color: var(--accent2); }
-
-  .ranking-preview {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .rank-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    background: var(--bg);
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    animation: slideIn 0.25s ease forwards;
-  }
-
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(-6px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .rank-num {
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--accent2);
-    width: 24px;
-    flex-shrink: 0;
-  }
-
-  .rank-name {
-    font-size: 13px;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: 'Space Grotesk', sans-serif;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    width: 100%;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #fff;
-  }
-
+  .ranking-preview { display: flex; flex-direction: column; gap: 6px; }
+  .rank-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg); border-radius: 6px; border: 1px solid var(--border); }
+  .rank-num { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--accent2); width: 24px; flex-shrink: 0; }
+  .rank-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; font-family: 'Space Grotesk', sans-serif; cursor: pointer; border: none; transition: all 0.2s; width: 100%; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
   .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
   .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-  .btn-secondary {
-    background: var(--bg);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
+  .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
   .btn-secondary:hover { border-color: var(--accent2); color: var(--accent2); }
-
-  .btn-success {
-    background: var(--green);
-    color: #fff;
-  }
-
-  .btn-success:hover { opacity: 0.9; }
-
+  .btn-success { background: var(--green); color: #fff; }
   .progress-section { display: none; }
   .progress-section.active { display: block; }
-
-  .progress-bar-track {
-    background: var(--border);
-    border-radius: 999px;
-    height: 6px;
-    overflow: hidden;
-    margin-top: 10px;
-  }
-
-  .progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    border-radius: 999px;
-    transition: width 0.3s ease;
-    width: 0%;
-  }
-
-  .progress-label {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 6px;
-    font-family: 'Space Mono', monospace;
-  }
-
-  .log-box {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px;
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    max-height: 120px;
-    overflow-y: auto;
-    margin-top: 10px;
-  }
-
+  .progress-bar-track { background: var(--border); border-radius: 999px; height: 6px; overflow: hidden; margin-top: 10px; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 999px; transition: width 0.3s ease; width: 0%; }
+  .progress-label { font-size: 12px; color: var(--muted); margin-top: 6px; font-family: 'Space Mono', monospace; }
+  .log-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); max-height: 100px; overflow-y: auto; margin-top: 10px; }
   .log-line { margin-bottom: 3px; }
   .log-line.ok { color: var(--green); }
   .log-line.err { color: var(--red); }
-
-  .empty-state {
-    text-align: center;
-    padding: 24px;
-    color: var(--muted);
-    font-size: 13px;
-  }
-
-  .shuffle-icon { display: inline-block; }
-
-  .overlay-preview {
-    background: #111;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    padding: 12px 16px;
-    display: flex;
-    gap: 12px;
-    align-items: stretch;
-    min-height: 120px;
-    margin-top: 4px;
-  }
-
-  .overlay-sidebar {
-    background: rgba(0,0,0,0.75);
-    border-radius: 6px;
-    padding: 10px 8px;
-    width: 120px;
-    flex-shrink: 0;
-  }
-
-  .overlay-title {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--accent2);
-    margin-bottom: 8px;
-    font-family: 'Space Mono', monospace;
-  }
-
-  .overlay-item {
-    font-size: 10px;
-    color: rgba(255,255,255,0.85);
-    padding: 3px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-family: 'Space Mono', monospace;
-  }
-
-  .overlay-video-area {
-    flex: 1;
-    background: #1a1a1a;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--muted);
-    font-size: 12px;
-  }
-
-  .badge {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 600;
-    background: rgba(124,58,237,0.15);
-    color: var(--accent2);
-    border: 1px solid rgba(124,58,237,0.3);
-    margin-left: 8px;
-  }
+  .empty-state { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
+  .overlay-preview { background: #111; border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; gap: 10px; min-height: 110px; margin-top: 4px; }
+  .overlay-sidebar { background: rgba(0,0,0,0.8); border-radius: 6px; padding: 8px; width: 110px; flex-shrink: 0; }
+  .overlay-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent2); margin-bottom: 6px; font-family: 'Space Mono', monospace; }
+  .overlay-item { font-size: 9px; color: rgba(255,255,255,0.85); padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Space Mono', monospace; }
+  .overlay-video-area { flex: 1; background: #1a1a1a; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: rgba(124,58,237,0.15); color: var(--accent2); border: 1px solid rgba(124,58,237,0.3); margin-left: 8px; }
+  canvas { display: none; }
 </style>
 </head>
 <body>
-
 <header>
   <div class="logo">SHORTS//RANK</div>
   <div class="tagline">Upload · Rank · Combine</div>
 </header>
-
 <main>
   <div class="left-panel">
-
-    <!-- Upload -->
     <div class="card">
       <div class="card-title">1. Upload Shorts</div>
       <div class="drop-zone" id="dropZone">
         <div class="drop-icon">🎬</div>
         <div class="drop-label">Drop your video files here</div>
         <div class="drop-sub">MP4, MOV, WebM supported</div>
-        <label for="fileInput" class="btn-browse" style="cursor:pointer">Browse Files</label>
+        <label for="fileInput" class="btn-browse">Browse Files</label>
         <input type="file" id="fileInput" multiple accept="video/*" style="display:none">
       </div>
     </div>
-
-    <!-- Video list -->
     <div class="card" id="videoListCard" style="display:none">
       <div class="card-title">Uploaded Videos <span class="badge" id="videoCount">0</span></div>
       <div class="video-list" id="videoList"></div>
     </div>
-
-    <!-- Progress -->
     <div class="card progress-section" id="progressSection">
       <div class="card-title">Processing</div>
-      <div id="progressLabel" class="progress-label">Initializing FFmpeg...</div>
-      <div class="progress-bar-track">
-        <div class="progress-bar-fill" id="progressFill"></div>
-      </div>
+      <div id="progressLabel" class="progress-label">Starting...</div>
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
       <div class="log-box" id="logBox"></div>
     </div>
-
   </div>
-
   <div class="right-panel">
-
-    <!-- Ranking title -->
     <div class="card">
       <div class="card-title">2. Ranking Title</div>
       <label class="field-label">What are you ranking?</label>
-      <input type="text" id="rankTitle" placeholder="e.g. Top Shorts, Best Clips..." value="Top Shorts">
+      <input type="text" id="rankTitle" placeholder="e.g. Top Shorts" value="Top Shorts">
     </div>
-
-    <!-- Random ranking -->
     <div class="card">
       <div class="card-title">3. Random Ranking</div>
       <div id="rankingPreview" class="ranking-preview">
-        <div class="empty-state">Upload videos first, then shuffle to rank.</div>
+        <div class="empty-state">Upload videos first, then shuffle.</div>
       </div>
       <br>
-      <button class="btn btn-secondary" id="shuffleBtn" onclick="shuffleRanking()">
-        <span class="shuffle-icon">🔀</span> Shuffle Ranking
-      </button>
+      <button class="btn btn-secondary" onclick="shuffleRanking()">🔀 Shuffle Ranking</button>
     </div>
-
-    <!-- Overlay preview -->
     <div class="card">
       <div class="card-title">Overlay Preview</div>
       <div class="overlay-preview">
         <div class="overlay-sidebar">
           <div class="overlay-title" id="previewTitle">TOP SHORTS</div>
-          <div id="previewList"><div style="color:#444;font-size:10px;font-family:monospace">no videos yet</div></div>
+          <div id="previewList"><div style="color:#444;font-size:9px;font-family:monospace">no videos yet</div></div>
         </div>
         <div class="overlay-video-area">▶ video plays here</div>
       </div>
     </div>
-
-    <!-- Generate -->
-    <button class="btn btn-primary" id="generateBtn" onclick="generateVideo()" disabled>
-      ⚡ Combine &amp; Download
-    </button>
-
+    <button class="btn btn-primary" id="generateBtn" onclick="generateVideo()" disabled>⚡ Combine &amp; Download</button>
   </div>
 </main>
 
+<canvas id="canvas"></canvas>
+
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
-let videos = [];      // {file, name, url, duration}
-let ranked = [];      // ordered array of indices into videos[]
-let ffmpegLoaded = false;
-let ffmpegInstance = null;
+let videos = [];
+let ranked = [];
 
 // ─── File handling ────────────────────────────────────────────────────────────
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
-
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  handleFiles([...e.dataTransfer.files]);
-});
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFiles([...e.dataTransfer.files]); });
 fileInput.addEventListener('change', () => handleFiles([...fileInput.files]));
 
 function handleFiles(files) {
-  const videoFiles = files.filter(f => f.type.startsWith('video/'));
-  if (!videoFiles.length) return;
-
-  videoFiles.forEach(file => {
+  const vids = files.filter(f => f.type.startsWith('video/'));
+  vids.forEach(file => {
     const url = URL.createObjectURL(file);
-    const vid = document.createElement('video');
-    vid.src = url;
-    vid.preload = 'metadata';
-    vid.onloadedmetadata = () => {
-      videos.push({ file, name: file.name.replace(/\.[^.]+$/, ''), url, duration: vid.duration });
-      renderVideoList();
-      shuffleRanking();
-      updateGenerateBtn();
+    const v = document.createElement('video');
+    v.src = url; v.preload = 'metadata';
+    v.onloadedmetadata = () => {
+      videos.push({ file, name: file.name.replace(/\.[^.]+$/, ''), url, duration: v.duration });
+      renderVideoList(); shuffleRanking(); updateGenerateBtn();
     };
   });
 }
@@ -539,244 +154,161 @@ function handleFiles(files) {
 function removeVideo(index) {
   URL.revokeObjectURL(videos[index].url);
   videos.splice(index, 1);
-  renderVideoList();
-  shuffleRanking();
-  updateGenerateBtn();
+  renderVideoList(); shuffleRanking(); updateGenerateBtn();
 }
 
 function renderVideoList() {
   const card = document.getElementById('videoListCard');
   const list = document.getElementById('videoList');
   document.getElementById('videoCount').textContent = videos.length;
-
-  if (videos.length === 0) { card.style.display = 'none'; return; }
+  if (!videos.length) { card.style.display = 'none'; return; }
   card.style.display = 'block';
-
   list.innerHTML = '';
   ranked.forEach((vi, ri) => {
     const v = videos[vi];
-    const item = document.createElement('div');
-    item.className = 'video-item';
-    item.innerHTML = `
-      <div class="video-rank">${ri + 1}</div>
-      <video class="video-thumb" src="${v.url}" preload="metadata"></video>
-      <div class="video-info">
-        <div class="video-name">${v.name}</div>
-        <div class="video-meta">${formatDur(v.duration)}</div>
-      </div>
-      <button class="remove-btn" onclick="removeVideo(${vi})" title="Remove">✕</button>
-    `;
-    list.appendChild(item);
+    const d = document.createElement('div');
+    d.className = 'video-item';
+    d.innerHTML = `<div class="video-rank">${ri+1}</div><video class="video-thumb" src="${v.url}" preload="metadata"></video><div class="video-info"><div class="video-name">${v.name}</div><div class="video-meta">${fmt(v.duration)}</div></div><button class="remove-btn" onclick="removeVideo(${vi})">✕</button>`;
+    list.appendChild(d);
   });
 }
 
-function formatDur(s) {
-  if (!s || isNaN(s)) return '--';
-  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
-  return `${m}:${sec.toString().padStart(2,'0')}`;
-}
+function fmt(s) { if (!s||isNaN(s)) return '--'; return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
 
 // ─── Ranking ──────────────────────────────────────────────────────────────────
 function shuffleRanking() {
-  if (videos.length === 0) {
-    document.getElementById('rankingPreview').innerHTML = '<div class="empty-state">Upload videos first, then shuffle to rank.</div>';
-    updateOverlayPreview();
-    return;
-  }
-
-  // Fisher-Yates shuffle
-  ranked = videos.map((_, i) => i);
-  for (let i = ranked.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [ranked[i], ranked[j]] = [ranked[j], ranked[i]];
-  }
-
-  const preview = document.getElementById('rankingPreview');
-  preview.innerHTML = '';
-  ranked.forEach((vi, ri) => {
-    const row = document.createElement('div');
-    row.className = 'rank-row';
-    row.innerHTML = `<span class="rank-num">#${ri+1}</span><span class="rank-name">${videos[vi].name}</span>`;
-    preview.appendChild(row);
+  if (!videos.length) { document.getElementById('rankingPreview').innerHTML = '<div class="empty-state">Upload videos first, then shuffle.</div>'; updateOverlayPreview(); return; }
+  ranked = videos.map((_,i)=>i);
+  for (let i = ranked.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [ranked[i],ranked[j]]=[ranked[j],ranked[i]]; }
+  const p = document.getElementById('rankingPreview');
+  p.innerHTML = '';
+  ranked.forEach((vi,ri) => {
+    const r = document.createElement('div'); r.className = 'rank-row';
+    r.innerHTML = `<span class="rank-num">#${ri+1}</span><span class="rank-name">${videos[vi].name}</span>`;
+    p.appendChild(r);
   });
-
-  renderVideoList();
-  updateOverlayPreview();
+  renderVideoList(); updateOverlayPreview();
 }
 
 document.getElementById('rankTitle').addEventListener('input', updateOverlayPreview);
 
 function updateOverlayPreview() {
-  const title = document.getElementById('rankTitle').value || 'TOP SHORTS';
+  const title = document.getElementById('rankTitle').value || 'Top Shorts';
   document.getElementById('previewTitle').textContent = title.toUpperCase();
-
   const list = document.getElementById('previewList');
-  if (ranked.length === 0) {
-    list.innerHTML = '<div style="color:#444;font-size:10px;font-family:monospace">no videos yet</div>';
-    return;
-  }
-  list.innerHTML = ranked.slice(0, 8).map((vi, ri) =>
-    `<div class="overlay-item">${ri+1}. ${videos[vi].name}</div>`
-  ).join('');
+  if (!ranked.length) { list.innerHTML = '<div style="color:#444;font-size:9px;font-family:monospace">no videos yet</div>'; return; }
+  list.innerHTML = ranked.slice(0,8).map((vi,ri) => `<div class="overlay-item">${ri+1}. ${videos[vi].name}</div>`).join('');
 }
 
-function updateGenerateBtn() {
-  document.getElementById('generateBtn').disabled = videos.length < 2;
-}
+function updateGenerateBtn() { document.getElementById('generateBtn').disabled = videos.length < 2; }
 
-// ─── FFmpeg load — using unpkg exact versions known to work together ──────────
-async function loadFFmpeg() {
-  if (ffmpegLoaded) return ffmpegInstance;
-  addLog('Loading FFmpeg.wasm...');
-
-  const script = document.createElement('script');
-  script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
-  document.head.appendChild(script);
-  await new Promise((res, rej) => { script.onload = res; script.onerror = rej; });
-
-  const { createFFmpeg, fetchFile } = FFmpeg;
-  window._fetchFile = fetchFile;
-
-  const ff = createFFmpeg({
-    log: false,
-    logger: ({ message }) => { if (message) addLog(message); },
-    progress: ({ ratio }) => setProgress(Math.min(ratio * 100, 99)),
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-  });
-
-  await ff.load();
-  ffmpegLoaded = true;
-  ffmpegInstance = ff;
-  addLog('FFmpeg ready ✓', 'ok');
-  return ff;
-}
-
-// ─── Generate video ───────────────────────────────────────────────────────────
+// ─── Canvas + MediaRecorder render ───────────────────────────────────────────
 async function generateVideo() {
   const btn = document.getElementById('generateBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ Processing...';
-
-  const progSection = document.getElementById('progressSection');
-  progSection.classList.add('active');
+  btn.disabled = true; btn.textContent = '⏳ Processing...';
+  document.getElementById('progressSection').classList.add('active');
   setProgress(0);
 
-  try {
-    const ff = await loadFFmpeg();
-    const fetchFile = window._fetchFile;
-    const title = document.getElementById('rankTitle').value || 'Top Shorts';
+  const title = document.getElementById('rankTitle').value || 'Top Shorts';
+  const W = 720, H = 1280;
+  const canvas = document.getElementById('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
 
-    // Write each video in ranked order
-    addLog(`Writing ${ranked.length} videos to memory...`);
-    const inputs = [];
-    for (let i = 0; i < ranked.length; i++) {
-      const v = videos[ranked[i]];
-      const fname = `input${i}.mp4`;
-      addLog(`  Writing: ${v.name}`);
-      ff.FS('writeFile', fname, await fetchFile(v.file));
-      inputs.push(fname);
-      setProgress(5 + (i / ranked.length) * 25);
-    }
+  // Check MediaRecorder support
+  const mimeType = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+  addLog(`Using codec: ${mimeType}`, 'ok');
 
-    // Build concat list
-    addLog('Building concat list...');
-    const concatLines = inputs.map(f => `file '${f}'`).join('\n');
-    ff.FS('writeFile', 'concat.txt', concatLines);
+  const chunks = [];
+  const stream = canvas.captureStream(30);
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4_000_000 });
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
-    addLog('Concatenating videos...');
-    setProgress(35);
+  const done = new Promise(res => recorder.onstop = res);
+  recorder.start(100);
 
-    // Concat all videos, scale to 720x1280 (Shorts format)
-    await ff.run(
-      '-f', 'concat', '-safe', '0', '-i', 'concat.txt',
-      '-c:v', 'libx264', '-c:a', 'aac',
-      '-vf', 'scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2',
-      '-preset', 'ultrafast', '-crf', '28',
-      'temp_concat.mp4'
-    );
+  addLog(`Rendering ${ranked.length} videos...`);
 
-    setProgress(70);
-    addLog('Applying overlay...');
-
-    const vfFilter = buildOverlayFilter(title);
-    await ff.run(
-      '-i', 'temp_concat.mp4',
-      '-vf', vfFilter,
-      '-c:v', 'libx264', '-c:a', 'copy',
-      '-preset', 'ultrafast', '-crf', '28',
-      'output.mp4'
-    );
-
-    setProgress(95);
-    addLog('Reading output...', 'ok');
-
-    const data = ff.FS('readFile', 'output.mp4');
-    const blob = new Blob([data.buffer], { type: 'video/mp4' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title.replace(/\s+/g, '_')}_ranked.mp4`;
-    a.click();
-
-    setProgress(100);
-    addLog('Done! Your video is downloading.', 'ok');
-
-    btn.textContent = '✅ Download Started!';
-    btn.className = 'btn btn-success';
-    setTimeout(() => {
-      btn.textContent = '⚡ Combine & Download';
-      btn.className = 'btn btn-primary';
-      btn.disabled = false;
-    }, 3000);
-
-    // Cleanup
-    for (const f of inputs) try { ff.FS('unlink', f); } catch(e) {}
-    try { ff.FS('unlink', 'concat.txt'); } catch(e) {}
-    try { ff.FS('unlink', 'temp_concat.mp4'); } catch(e) {}
-    try { ff.FS('unlink', 'output.mp4'); } catch(e) {}
-
-  } catch (err) {
-    addLog('Error: ' + err.message, 'err');
-    console.error(err);
-    btn.textContent = '⚡ Combine & Download';
-    btn.className = 'btn btn-primary';
-    btn.disabled = false;
+  for (let i = 0; i < ranked.length; i++) {
+    const v = videos[ranked[i]];
+    addLog(`  Rendering: ${v.name}`);
+    setProgress(5 + (i / ranked.length) * 88);
+    await renderVideoToCanvas(ctx, v, W, H, title, i, ranked.length);
   }
+
+  addLog('Finalizing...');
+  recorder.stop();
+  await done;
+  setProgress(98);
+
+  const blob = new Blob(chunks, { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${title.replace(/\s+/g,'_')}_ranked.webm`;
+  a.click();
+
+  setProgress(100);
+  addLog('Done! Downloading now.', 'ok');
+  btn.textContent = '✅ Download Started!';
+  btn.className = 'btn btn-success';
+  setTimeout(() => { btn.textContent = '⚡ Combine & Download'; btn.className = 'btn btn-primary'; btn.disabled = false; }, 3000);
 }
 
-function buildOverlayFilter(title) {
-  // Draw a semi-transparent black box on the left side
-  // Then draw the title + ranked names on top
-  const lines = [];
+function renderVideoToCanvas(ctx, videoObj, W, H, title, clipIndex, totalClips) {
+  return new Promise((resolve, reject) => {
+    const vid = document.createElement('video');
+    vid.src = videoObj.url;
+    vid.muted = false;
+    vid.preload = 'auto';
 
-  // Background box
-  lines.push(`drawbox=x=0:y=0:w=180:h=ih:color=black@0.65:t=fill`);
+    vid.oncanplaythrough = () => {
+      vid.play();
+      let lastTime = null;
 
-  // Title text
-  const safeTitle = escapeFFmpegText(title.toUpperCase());
-  lines.push(`drawtext=text='${safeTitle}':x=8:y=12:fontsize=16:fontcolor=#a855f7:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf`);
+      function drawFrame(ts) {
+        if (vid.ended || vid.paused) { vid.pause(); resolve(); return; }
 
-  // Divider line
-  lines.push(`drawbox=x=8:y=36:w=164:h=1:color=white@0.25:t=fill`);
+        // Draw video frame scaled to fill canvas
+        const vr = vid.videoWidth / vid.videoHeight;
+        const cr = W / H;
+        let sw, sh, sx, sy;
+        if (vr > cr) { sh = H; sw = H * vr; sx = -(sw-W)/2; sy = 0; }
+        else { sw = W; sh = W / vr; sx = 0; sy = -(sh-H)/2; }
+        ctx.drawImage(vid, sx, sy, sw, sh);
 
-  // Ranked items
-  ranked.forEach((vi, ri) => {
-    const name = escapeFFmpegText(`${ri+1}. ${videos[vi].name.substring(0, 18)}`);
-    const y = 46 + ri * 22;
-    lines.push(`drawtext=text='${name}':x=8:y=${y}:fontsize=13:fontcolor=white@0.9:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf`);
+        // Overlay sidebar
+        ctx.fillStyle = 'rgba(0,0,0,0.72)';
+        ctx.fillRect(0, 0, 190, H);
+
+        // Title
+        ctx.fillStyle = '#a855f7';
+        ctx.font = 'bold 18px monospace';
+        ctx.fillText(title.toUpperCase(), 10, 32);
+
+        // Divider
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillRect(10, 42, 170, 1);
+
+        // Ranked list
+        ranked.forEach((vi, ri) => {
+          const isActive = ri === clipIndex;
+          ctx.fillStyle = isActive ? '#a855f7' : 'rgba(255,255,255,0.75)';
+          ctx.font = isActive ? 'bold 15px monospace' : '14px monospace';
+          const label = `${ri+1}. ${videos[vi].name.substring(0,16)}`;
+          ctx.fillText(label, 10, 62 + ri * 24);
+        });
+
+        requestAnimationFrame(drawFrame);
+      }
+
+      requestAnimationFrame(drawFrame);
+      vid.addEventListener('ended', () => { resolve(); }, { once: true });
+    };
+
+    vid.onerror = reject;
+    vid.load();
   });
-
-  return lines.join(',');
-}
-
-function escapeFFmpegText(str) {
-  return str
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, "\\'")
-    .replace(/:/g, '\\:')
-    .replace(/\[/g, '\\[')
-    .replace(/\]/g, '\\]');
 }
 
 function setProgress(pct) {
@@ -784,7 +316,7 @@ function setProgress(pct) {
   document.getElementById('progressLabel').textContent = Math.round(pct) + '% complete';
 }
 
-function addLog(msg, type = '') {
+function addLog(msg, type='') {
   const box = document.getElementById('logBox');
   const line = document.createElement('div');
   line.className = 'log-line ' + type;
